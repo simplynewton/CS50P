@@ -1,0 +1,288 @@
+import random
+
+class Character:
+    def __init__(self, hp, gold, attack_power, armor, potions):
+        self.hp = hp
+        self.gold = gold
+        self.attack_power = attack_power
+        self.armor = armor
+        self.potions = potions
+        self.perks = []
+        self.fire_bombs = 0  # Track the number of Fire Bombs
+        self.fire_bomb_damage = 20
+        self.fire_bomb_turns = 3
+
+    def attack(self, enemy):
+        damage = max(0, self.attack_power - enemy.armor)
+        enemy.hp -= damage
+        print(f"\nYou dealt {damage} damage to the {enemy.name}!")
+        print(f"{enemy.name} HP: {enemy.hp}/{enemy.max_hp}")
+        if enemy.hp <= 0:
+            print(f"\nThe {enemy.name} has been defeated!")
+
+    def use_potion(self):
+        if self.potions > 0:
+            self.hp = min(100, self.hp + 20)
+            self.potions -= 1
+            print(f"\nYou used a Healing Potion. Your HP is now {self.hp}/100.")
+        else:
+            print("\nYou don't have any Healing Potions left!")
+
+    def use_fire_bomb(self, enemy):
+        if self.fire_bombs > 0:
+            damage = self.fire_bomb_damage
+            enemy.hp -= damage
+            print(f"\nYou used a Fire Bomb. It dealt {damage} damage to the {enemy.name}!")
+            self.fire_bombs -= 1
+            self.fire_bomb_turns -= 1
+            print(f"{enemy.name} HP: {enemy.hp}/{enemy.max_hp}")
+            if self.fire_bomb_turns > 0 and enemy.hp > 0:
+                print(f"The {enemy.name} will continue to burn for {self.fire_bomb_turns} more turns!")
+        else:
+            print("\nYou don't have any Fire Bombs left!")
+
+    def check_stats(self):
+        print(f"\n--- Stats ---\nHP: {self.hp}/100\nGold: {self.gold}\nAttack Power: {self.attack_power}\nArmor: {self.armor}\nHealing Potions: {self.potions}\nFire Bombs: {self.fire_bombs}")
+        if self.perks:
+            print("Perks: " + ", ".join([perk.name for perk in self.perks]))
+        else:
+            print("Perks: None")
+
+    def buy_item(self, item, cost):
+        if self.gold >= cost:
+            self.gold -= cost
+            item.apply(self)
+            print(f"\nYou bought {item.name} for {cost} gold.")
+        else:
+            print("\nYou don't have enough gold!")
+
+    def flee(self):
+        print("\nYou fled the dungeon and returned to the surface. You must start your journey again from Stage 1.")
+        return True
+
+    def add_perk(self, perk):
+        self.perks.append(perk)
+        print(f"\nYou unlocked the {perk.name} perk!")
+        perk.apply(self)
+
+class Enemy:
+    def __init__(self, name, hp, attack_power, armor):
+        self.name = name
+        self.hp = hp
+        self.max_hp = hp
+        self.attack_power = attack_power
+        self.armor = armor
+
+    def attack(self, player):
+        damage = max(0, self.attack_power - player.armor)
+        player.hp -= damage
+        print(f"\nThe {self.name} dealt {damage} damage to you!")
+        print(f"Your HP: {player.hp}/100")
+
+class Item:
+    def __init__(self, name, effect):
+        self.name = name
+        self.effect = effect
+
+    def apply(self, player):
+        self.effect(player)
+
+# Define Perks
+class Perk:
+    def __init__(self, name, description, effect):
+        self.name = name
+        self.description = description
+        self.effect = effect
+
+    def apply(self, player):
+        self.effect(player)
+        print(f"\n{self.description}")
+
+# Perk Effects
+def berserker_rage_effect(player):
+    print("Your Attack Power will increase by 5 when HP drops below 30.")
+    player.berserker_rage = True
+
+def iron_will_effect(player):
+    print("You gain 10 Armor for one turn after using a Healing Potion.")
+    player.iron_will = True
+
+def swift_strike_effect(player):
+    print("You gain a chance to attack twice in a single turn.")
+    player.swift_strike = True
+
+def elemental_mastery_effect(player):
+    print("Your attacks now deal an additional 5 Fire Damage.")
+    player.attack_power += 5
+
+# Perk Objects
+berserker_rage = Perk("Berserker Rage", "Increases Attack Power by 5 when HP drops below 30.", berserker_rage_effect)
+iron_will = Perk("Iron Will", "Gain 10 Armor for one turn after using a Healing Potion.", iron_will_effect)
+swift_strike = Perk("Swift Strike", "Gain a chance to attack twice in a single turn.", swift_strike_effect)
+elemental_mastery = Perk("Elemental Mastery", "Adds 5 Fire Damage to your attacks.", elemental_mastery_effect)
+
+# List of Perks
+available_perks = [berserker_rage, iron_will, swift_strike, elemental_mastery]
+
+# Shop Items
+def healing_potion_effect(player):
+    player.potions += 1
+
+def sword_upgrade_effect(player):
+    player.attack_power += 5
+
+def armor_upgrade_effect(player):
+    player.armor += 2
+
+def fire_bomb_effect(player):
+    player.fire_bombs += 1
+
+def regen_potion_effect(player):
+    player.hp = min(100, player.hp + 15)
+
+def unlock_perk_effect(player):
+    if len(player.perks) < len(available_perks):
+        available = [perk for perk in available_perks if perk not in player.perks]
+        new_perk = random.choice(available)
+        player.add_perk(new_perk)
+    else:
+        print("\nYou have unlocked all available perks!")
+
+healing_potion = Item("Healing Potion", healing_potion_effect)
+sword_upgrade = Item("Sword Upgrade", sword_upgrade_effect)
+armor_upgrade = Item("Light Armor", armor_upgrade_effect)
+fire_bomb = Item("Fire Bomb", fire_bomb_effect)
+regen_potion = Item("Potion of Regeneration", regen_potion_effect)
+unlock_perk = Item("Unlock Perk", unlock_perk_effect)
+
+shop_items = [
+    (healing_potion, 20),
+    (sword_upgrade, 30),
+    (armor_upgrade, 40),
+    (fire_bomb, 25),
+    (regen_potion, 35),
+    (unlock_perk, 50)
+]
+
+def show_shop(player):
+    print("\n--- Welcome to the Shop! ---")
+    for i, (item, cost) in enumerate(shop_items, 1):
+        print(f"{i}. {item.name} - {cost} Gold")
+    print("7. Leave the Shop")
+
+    choice = int(input("\nChoose an item to buy (1-7): "))
+    if 1 <= choice <= 6:
+        player.buy_item(shop_items[choice - 1][0], shop_items[choice - 1][1])
+    elif choice == 7:
+        print("\nYou leave the shop.")
+    else:
+        print("\nInvalid choice!")
+
+def combat(player, enemy):
+    while enemy.hp > 0 and player.hp > 0:
+        print(f"\n--- {enemy.name} Encounter ---")
+        print(f"Your HP: {player.hp}/100 | {enemy.name} HP: {enemy.hp}/{enemy.max_hp}")
+        print("\nChoose your action:")
+        print("1. Attack")
+        print("2. Use Healing Potion")
+        print("3. Use Fire Bomb")
+        print("4. Check Stats")
+        print("5. Flee")
+
+        choice = int(input("\nEnter your choice: "))
+        if choice == 1:
+            print("\n--- Your Turn ---")
+            player.attack(enemy)
+            print("\n-------------------")
+            if enemy.hp > 0:
+                print("\n--- Enemy's Turn ---")
+                enemy.attack(player)
+                print("\n--------------------")
+        elif choice == 2:
+            print("\n--- Your Turn ---")
+            player.use_potion()
+            print("\n-------------------")
+        elif choice == 3:
+            print("\n--- Your Turn ---")
+            player.use_fire_bomb(enemy)
+            print("\n-------------------")
+            if enemy.hp > 0:
+                print("\n--- Enemy's Turn ---")
+                enemy.attack(player)
+                print("\n--------------------")
+        elif choice == 4:
+            print("\n--- Check Stats ---")
+            player.check_stats()
+            print("\n-------------------")
+        elif choice == 5:
+            if player.flee():
+                return False
+        else:
+            print("\nInvalid choice!")
+
+        if player.hp <= 0:
+            print("\nYou have been defeated. Game over.")
+            return False
+
+    return True
+
+def goblin_encounter(player):
+    goblin = Enemy("Goblin Grunt", 30, 5, 0)
+    print("\nYou enter a dimly lit chamber and a Goblin Grunt leaps out from the shadows!")
+    return combat(player, goblin)
+
+def goblin_warrior_encounter(player):
+    goblin_warrior = Enemy("Goblin Warrior", 50, 8, 2)
+    print("\nYou enter a dark chamber and a Goblin Warrior steps forward with a wicked grin!")
+    return combat(player, goblin_warrior)
+
+def orc_warchief_encounter(player):
+    orc_warchief = Enemy("Orc Warchief", 100, 15, 5)
+    print("\nYou enter the final chamber where the Orc Warchief awaits, towering over you!")
+    return combat(player, orc_warchief)
+
+def dungeon(player):
+    if goblin_encounter(player):
+        player.gold += 10
+        print(f"\nVictory! You earned 10 Gold. Current Gold: {player.gold}")
+
+        # Shop
+        show_shop(player)
+
+        # Stage 2: Goblin Warrior
+        if goblin_warrior_encounter(player):
+            player.gold += 20
+            print(f"\nVictory! You earned 20 Gold. Current Gold: {player.gold}")
+
+            # Shop
+            show_shop(player)
+
+            # Final Stage: Orc Warchief
+            if orc_warchief_encounter(player):
+                print("\nCongratulations! You have defeated the Orc Warchief and completed the dungeon!")
+            else:
+                print("\nYou were defeated by the Orc Warchief. Game over.")
+        else:
+            print("\nYou were defeated by the Goblin Warrior. Game over.")
+    else:
+        print("\nYou were defeated by the Goblin Grunt. Game over.")
+
+def main():
+    player = Character(hp=100, gold=50, attack_power=10, armor=0, potions=0)
+
+    while True:
+        print("\n--- Welcome to the Dungeon Crawler: Goblin Gauntlet ---")
+        print("1. Start Dungeon")
+        print("2. Exit")
+
+        choice = int(input("\nEnter your choice: "))
+        if choice == 1:
+            dungeon(player)
+        elif choice == 2:
+            print("\nThanks for playing! Goodbye.")
+            break
+        else:
+            print("\nInvalid choice! Enter choose another action")
+
+if __name__ == "__main__":
+    main()
