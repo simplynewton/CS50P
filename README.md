@@ -1,1 +1,1 @@
-## This the complete version of CS50P in august 2024
+## Completed this course on August 2024
